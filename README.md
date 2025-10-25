@@ -5,8 +5,9 @@ Flask-based authentication backend with sign-up and sign-in functionality for bu
 ## Features
 
 - User registration with name, last name, email, and optional company name
+- Role-based access control (admin/user)
 - Password hashing with bcrypt
-- JWT-based authentication
+- JWT-based authentication with role information
 - PostgreSQL database
 - CORS enabled for cross-origin requests
 - Health check endpoint
@@ -18,6 +19,18 @@ Flask-based authentication backend with sign-up and sign-in functionality for bu
 - **email** (required): User's email address (unique)
 - **password** (required): User's password (hashed)
 - **company_name** (optional): User's company name
+- **role** (auto-assigned): User access level ('user' or 'admin') - defaults to 'user'
+
+## Access Levels
+
+The system supports two access levels:
+- **user**: Default role for all new signups. Standard access level.
+- **admin**: Administrative access. Must be manually set in the database.
+
+To promote a user to admin, update the database directly:
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'user@example.com';
+```
 
 ## Database Setup
 
@@ -31,11 +44,16 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     company_name VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    role VARCHAR(50) NOT NULL DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_valid_role CHECK (role IN ('admin', 'user'))
 );
 
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
 ```
+
+Or run the `schema.sql` file provided in the repository.
 
 ## Environment Variables
 
@@ -99,7 +117,8 @@ Content-Type: application/json
 Success Response (201):
 ```json
 {
-  "message": "User created successfully"
+  "message": "User created successfully",
+  "role": "user"
 }
 ```
 
@@ -127,10 +146,13 @@ Success Response (200):
     "name": "John",
     "last_name": "Doe",
     "email": "john.doe@example.com",
-    "company_name": "Acme Inc"
+    "company_name": "Acme Inc",
+    "role": "user"
   }
 }
 ```
+
+Note: The JWT token also includes the user's role in its payload for easy access control.
 
 Error Responses:
 - 400: Missing email or password

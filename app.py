@@ -80,12 +80,15 @@ def signup():
     if existing:
         return jsonify({"error": "Email already registered"}), 409
 
+    # Role defaults to 'user' for all signups
+    role = 'user'
+
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
     db_execute(
-        "INSERT INTO users (name, last_name, email, password, company_name) VALUES (%s, %s, %s, %s, %s)",
-        (name, last_name, email, hashed_pw, company_name), commit=True
+        "INSERT INTO users (name, last_name, email, password, company_name, role) VALUES (%s, %s, %s, %s, %s, %s)",
+        (name, last_name, email, hashed_pw, company_name, role), commit=True
     )
-    return jsonify({"message": "User created successfully"}), 201
+    return jsonify({"message": "User created successfully", "role": role}), 201
 
 
 @app.route('/signin', methods=['POST'])
@@ -98,19 +101,20 @@ def signin():
         return jsonify({"error": "email and password are required"}), 400
 
     user = db_execute(
-        "SELECT id, name, last_name, email, password, company_name FROM users WHERE email = %s",
+        "SELECT id, name, last_name, email, password, company_name, role FROM users WHERE email = %s",
         (email,), fetchone=True
     )
     if not user:
         return jsonify({"error": "Invalid email or password"}), 401
 
-    user_id, name, last_name, email, hashed, company_name = user
+    user_id, name, last_name, email, hashed, company_name, role = user
     if not bcrypt.check_password_hash(hashed, password):
         return jsonify({"error": "Invalid email or password"}), 401
 
     token = jwt.encode(
         {
             'user_id': user_id,
+            'role': role,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=2)
         },
         app.config['SECRET_KEY'],
@@ -124,7 +128,8 @@ def signin():
             "name": name,
             "last_name": last_name,
             "email": email,
-            "company_name": company_name
+            "company_name": company_name,
+            "role": role
         }
     }), 200
 
