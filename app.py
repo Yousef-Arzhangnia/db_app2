@@ -134,6 +134,43 @@ def signin():
     }), 200
 
 
+@app.route('/users', methods=['GET'])
+def get_users():
+    """
+    Retrieve all users from the database.
+    Returns user data WITHOUT passwords for security.
+    """
+    try:
+        users = db_execute(
+            "SELECT id, name, last_name, email, company_name, role, created_at FROM users ORDER BY created_at DESC",
+            fetchall=True
+        )
+
+        if not users:
+            return jsonify({"users": [], "count": 0}), 200
+
+        user_list = []
+        for user in users:
+            user_id, name, last_name, email, company_name, role, created_at = user
+            user_list.append({
+                "id": user_id,
+                "name": name,
+                "last_name": last_name,
+                "email": email,
+                "company_name": company_name,
+                "role": role,
+                "created_at": created_at.isoformat() if created_at else None
+            })
+
+        return jsonify({
+            "users": user_list,
+            "count": len(user_list)
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": "Failed to retrieve users", "detail": str(e)}), 500
+
+
 if __name__ == '__main__':
     # For local testing only; Render uses gunicorn start command
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
