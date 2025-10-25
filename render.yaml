@@ -1,0 +1,22 @@
+# render.yaml
+services:
+  - type: web
+    name: bizapp-auth-backend
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DB_NAME
+        value: opdo_auth_db_v2
+      - key: DB_USER
+        value: opdo_auth_db_v2_user
+      - key: DB_PASSWORD
+        value: rhczE74mfcxv0LFUUvS1TluZcF1rz0Id
+      - key: DB_HOST
+        value: dpg-d3u9t1n5r7bs73fc6l40-a
+      - key: DB_PORT
+        value: "5432"
+      - key: SECRET_KEY
+        value: BIZAPP_SECRET_KEY_2025
+databases:
+  - name: bizapp-auth-db
